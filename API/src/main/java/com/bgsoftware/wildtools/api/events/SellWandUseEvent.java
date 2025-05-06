@@ -143,6 +143,13 @@ public class SellWandUseEvent extends Event implements Cancellable {
         return cancelled;
     }
 
+    /**
+     * If player is sneaking sell
+     * Shift+Right click sells
+     * Right click displays items to be sold
+     */
+    public boolean shouldSell() { return player.isSneaking(); }
+
     @Override
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;

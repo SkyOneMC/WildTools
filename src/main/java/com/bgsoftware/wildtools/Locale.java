@@ -47,6 +47,8 @@ public class Locale {
     public static Locale SOLD_CHEST = new Locale("SOLD_CHEST");
     public static Locale MULTIPLIER = new Locale("MULTIPLIER");
     public static Locale NO_SELL_ITEMS = new Locale("NO_SELL_ITEMS");
+    public static Locale SELL_INSPECT = new Locale("SELL_INSPECT");
+    public static Locale SOLD_ITEM = new Locale("SOLD_ITEM");
     public static Locale SORTED_CHEST = new Locale("SORTED_CHEST");
     public static Locale NO_SORT_ITEMS = new Locale("NO_SORT_ITEMS");
     public static Locale TOOL_INFO_HEADER = new Locale("TOOL_INFO_HEADER");

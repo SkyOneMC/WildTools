@@ -52,7 +52,11 @@ public class WSellTool extends WTool implements SellTool {
         double totalEarnings = sellInfo.getTotalEarnings();
         double multiplier = getMultiplier();
 
-        String message = toSell.isEmpty() ? Locale.NO_SELL_ITEMS.getMessage() : Locale.SOLD_CHEST.getMessage();
+        String message = e.getPlayer().isSneaking()
+                ? Locale.SELL_INSPECT.getMessage()
+                : toSell.isEmpty()
+                    ? Locale.NO_SELL_ITEMS.getMessage()
+                    : Locale.SOLD_CHEST.getMessage();
 
         SellWandUseEvent sellWandUseEvent = new SellWandUseEvent(e.getPlayer(), blockState, totalEarnings,
                 multiplier, message == null ? "" : message);
@@ -64,28 +68,43 @@ public class WSellTool extends WTool implements SellTool {
         multiplier = sellWandUseEvent.getMultiplier();
         totalEarnings = sellWandUseEvent.getPrice() * multiplier;
 
-        plugin.getProviders().getEconomyProvider().depositPlayer(e.getPlayer(), totalEarnings);
+        String[] soldInfo = null;
 
-        plugin.getProviders().removeContainer(blockState, inventory, sellInfo);
+        if (sellWandUseEvent.shouldSell()) {
+            plugin.getProviders().getEconomyProvider().depositPlayer(e.getPlayer(), totalEarnings);
+            plugin.getProviders().removeContainer(blockState, inventory, sellInfo);
+
+            if (!toSell.isEmpty())
+                reduceDurablility(e.getPlayer(), 1, e.getItem());
+
+            Block soldContainer = e.getClickedBlock();
+
+            for (SoldItem soldItem : toSell.values()) {
+                SellWandLogger.log(e.getPlayer().getName() + " sold x" + soldItem.getItem().getAmount() + " " +
+                        soldItem.getItem().getType() + " from " + soldContainer.getWorld().getName() + "," +
+                        soldContainer.getX() + "," + soldContainer.getY() + "," + soldContainer.getZ() + " for $" +
+                        soldItem.getPrice() + " (Multiplier: " + multiplier + ")");
+            }
+        } else {
+            soldInfo = new String[toSell.size()];
+            int i = 0;
+            for (SoldItem soldItem : toSell.values()) {
+                soldInfo[i++] = Locale.SOLD_ITEM.getMessage().replace("{0}", soldItem.getItem().getType().name())
+                        .replace("{1}", Integer.toString(soldItem.getItem().getAmount())
+                        .replace("{2}", Double.toString(soldItem.getPrice()))
+                        .replace("{3}", Double.toString(multiplier)));
+            }
+        }
 
         //noinspection all
         message = sellWandUseEvent.getMessage().replace("{0}", NumberUtils.format(totalEarnings))
                 .replace("{1}", multiplier != 1 && Locale.MULTIPLIER.getMessage() != null ? Locale.MULTIPLIER.getMessage(multiplier) : "");
 
-        if (!toSell.isEmpty())
-            reduceDurablility(e.getPlayer(), 1, e.getItem());
-
-        Block soldContainer = e.getClickedBlock();
-
-        for (SoldItem soldItem : toSell.values()) {
-            SellWandLogger.log(e.getPlayer().getName() + " sold x" + soldItem.getItem().getAmount() + " " +
-                    soldItem.getItem().getType() + " from " + soldContainer.getWorld().getName() + "," +
-                    soldContainer.getX() + "," + soldContainer.getY() + "," + soldContainer.getZ() + " for $" +
-                    soldItem.getPrice() + " (Multiplier: " + multiplier + ")");
-        }
-
         if (!message.isEmpty())
             e.getPlayer().sendMessage(message);
+
+        if(soldInfo != null && soldInfo.length > 0)
+            e.getPlayer().sendMessage(soldInfo);
 
         return true;
     }

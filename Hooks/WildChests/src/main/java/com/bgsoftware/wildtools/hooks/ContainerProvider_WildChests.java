@@ -45,7 +45,10 @@ public class ContainerProvider_WildChests implements ExtendedContainerProvider {
 
             if (chest instanceof StorageChest) {
                 ItemStack itemStack = ((StorageChest) chest).getItemStack();
-                BigInteger amount = ((StorageChest) chest).getAmount();
+                BigInteger amount = ((StorageChest) chest).getAmount().subtract(BigInteger.ONE); // subtract 1 from total amount
+                if (amount.compareTo(BigInteger.ZERO) <= 0) {
+                    return new SellInfo(toSell, totalEarnings); // nothing to sell
+                }
                 int slots = amount.divide(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
 
                 for (int i = 0; i < slots; i++) {
@@ -95,7 +98,7 @@ public class ContainerProvider_WildChests implements ExtendedContainerProvider {
 
         if (chest instanceof StorageChest) {
             if (sellInfo.getSoldItems().containsKey(0))
-                ((StorageChest) chest).setAmount(BigInteger.ZERO);
+                ((StorageChest) chest).setAmount(BigInteger.ONE);
         } else {
             Inventory[] pages = chest.getPages();
             for (int i = 0; i < pages.length; i++) {
