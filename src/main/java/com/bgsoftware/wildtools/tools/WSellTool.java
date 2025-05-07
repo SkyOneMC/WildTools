@@ -52,10 +52,10 @@ public class WSellTool extends WTool implements SellTool {
         double totalEarnings = sellInfo.getTotalEarnings();
         double multiplier = getMultiplier();
 
-        String message = !e.getPlayer().isSneaking()
-                ? Locale.SELL_INSPECT.getMessage()
-                : toSell.isEmpty()
-                    ? Locale.NO_SELL_ITEMS.getMessage()
+        String message = toSell.isEmpty()
+                ? Locale.NO_SELL_ITEMS.getMessage()
+                : e.getPlayer().isSneaking()
+                    ? Locale.SELL_INSPECT.getMessage()
                     : Locale.SOLD_CHEST.getMessage();
 
         SellWandUseEvent sellWandUseEvent = new SellWandUseEvent(e.getPlayer(), blockState, totalEarnings,
@@ -89,10 +89,9 @@ public class WSellTool extends WTool implements SellTool {
             soldInfo = new String[toSell.size()];
             int i = 0;
             for (SoldItem soldItem : toSell.values()) {
-                soldInfo[i++] = Locale.SOLD_ITEM.getMessage().replace("{0}", soldItem.getItem().getType().name())
+                soldInfo[i++] = Locale.SOLD_ITEM.getMessage().replace("{0}", soldItem.getItem().getType().name().replace("_", " "))
                         .replace("{1}", Integer.toString(soldItem.getItem().getAmount()))
-                        .replace("{2}", NumberUtils.format(soldItem.getPrice()))
-                        .replace("{3}", multiplier != 1 && Locale.MULTIPLIER.getMessage() != null ? Locale.MULTIPLIER.getMessage(multiplier) : "");
+                        .replace("{2}", NumberUtils.format(soldItem.getPrice() * multiplier));
             }
         }
 
