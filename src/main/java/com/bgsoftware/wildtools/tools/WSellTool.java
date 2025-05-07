@@ -68,8 +68,6 @@ public class WSellTool extends WTool implements SellTool {
         multiplier = sellWandUseEvent.getMultiplier();
         totalEarnings = sellWandUseEvent.getPrice() * multiplier;
 
-        String[] soldInfo = null;
-
         if (sellWandUseEvent.shouldSell()) {
             plugin.getProviders().getEconomyProvider().depositPlayer(e.getPlayer(), totalEarnings);
             plugin.getProviders().removeContainer(blockState, inventory, sellInfo);
@@ -85,24 +83,24 @@ public class WSellTool extends WTool implements SellTool {
                         soldContainer.getX() + "," + soldContainer.getY() + "," + soldContainer.getZ() + " for $" +
                         soldItem.getPrice() + " (Multiplier: " + multiplier + ")");
             }
-        } else {
-            soldInfo = new String[toSell.size()];
-            int i = 0;
-            for (SoldItem soldItem : toSell.values()) {
-                soldInfo[i++] = Locale.SOLD_ITEM.getMessage().replace("{0}", soldItem.getItem().getType().name().replace("_", " "))
-                        .replace("{1}", Integer.toString(soldItem.getItem().getAmount()))
-                        .replace("{2}", NumberUtils.format(soldItem.getPrice() * multiplier));
-            }
         }
 
         //noinspection all
         message = sellWandUseEvent.getMessage().replace("{0}", NumberUtils.format(totalEarnings))
                 .replace("{1}", multiplier != 1 && Locale.MULTIPLIER.getMessage() != null ? Locale.MULTIPLIER.getMessage(multiplier) : "");
 
+        String[] soldInfo = new String[toSell.size()];
+        int i = 0;
+        for (SoldItem soldItem : toSell.values()) {
+            soldInfo[i++] = Locale.SOLD_ITEM.getMessage().replace("{0}", soldItem.getItem().getType().name().replace("_", " "))
+                    .replace("{1}", Integer.toString(soldItem.getItem().getAmount()))
+                    .replace("{2}", NumberUtils.format(soldItem.getPrice() * multiplier));
+        }
+
         if (!message.isEmpty())
             e.getPlayer().sendMessage(message);
 
-        if(soldInfo != null && soldInfo.length > 0)
+        if(soldInfo.length > 0)
             e.getPlayer().sendMessage(soldInfo);
 
         return true;
