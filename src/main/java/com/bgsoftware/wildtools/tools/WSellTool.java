@@ -52,7 +52,7 @@ public class WSellTool extends WTool implements SellTool {
         double totalEarnings = sellInfo.getTotalEarnings();
         double multiplier = getMultiplier();
 
-        String message = e.getPlayer().isSneaking()
+        String message = !e.getPlayer().isSneaking()
                 ? Locale.SELL_INSPECT.getMessage()
                 : toSell.isEmpty()
                     ? Locale.NO_SELL_ITEMS.getMessage()
@@ -90,9 +90,9 @@ public class WSellTool extends WTool implements SellTool {
             int i = 0;
             for (SoldItem soldItem : toSell.values()) {
                 soldInfo[i++] = Locale.SOLD_ITEM.getMessage().replace("{0}", soldItem.getItem().getType().name())
-                        .replace("{1}", Integer.toString(soldItem.getItem().getAmount())
-                        .replace("{2}", Double.toString(soldItem.getPrice()))
-                        .replace("{3}", Double.toString(multiplier)));
+                        .replace("{1}", Integer.toString(soldItem.getItem().getAmount()))
+                        .replace("{2}", NumberUtils.format(soldItem.getPrice()))
+                        .replace("{3}", multiplier != 1 && Locale.MULTIPLIER.getMessage() != null ? Locale.MULTIPLIER.getMessage(multiplier) : "");
             }
         }
 
