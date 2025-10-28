@@ -1,8 +1,9 @@
 package com.bgsoftware.wildtools.listeners;
 
 import com.bgsoftware.wildtools.WildToolsPlugin;
+import com.bgsoftware.wildtools.api.objects.ToolMode;
+import com.bgsoftware.wildtools.handlers.EditorHandler;
 import com.bgsoftware.wildtools.scheduler.Scheduler;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -12,7 +13,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
-import com.bgsoftware.wildtools.api.objects.ToolMode;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -52,11 +54,10 @@ public class EditorListener implements Listener {
      */
 
     private Map<UUID, ItemStack> latestClickedItem = new HashMap<>();
-    private String[] inventoryTitles = new String[] {"WildTools", "Tools Editor", "Tool Editor"};
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClickMonitor(InventoryClickEvent e){
-        if(e.getCurrentItem() != null && e.isCancelled() && Arrays.stream(inventoryTitles).anyMatch(title -> e.getView().getTitle().contains(title))) {
+        if(e.getCurrentItem() != null && e.isCancelled() && isEditorMenu(e.getView())) {
             latestClickedItem.put(e.getWhoClicked().getUniqueId(), e.getCurrentItem());
             Scheduler.runTask(() -> latestClickedItem.remove(e.getWhoClicked().getUniqueId()), 20L);
         }
@@ -75,15 +76,15 @@ public class EditorListener implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e){
-        if(e.getInventory() == null)
-            return;
-
-        if(!(e.getWhoClicked() instanceof Player))
+        if(e.getInventory() == null || !isEditorMenu(e.getView()) || !(e.getWhoClicked() instanceof Player))
             return;
 
         Player player = (Player) e.getWhoClicked();
 
-        if(e.getView().getTitle().equals("" + ChatColor.AQUA + ChatColor.BOLD + "WildTools")){
+        EditorHandler.EditorMenu editorMenu = (EditorHandler.EditorMenu) e.getView().getTopInventory().getHolder();
+        EditorHandler.EditorMenuType menuType = editorMenu.getMenuType();
+
+        if(menuType == EditorHandler.EditorMenuType.SETTINGS){
             e.setCancelled(true);
 
             switch (e.getRawSlot()){
@@ -107,7 +108,7 @@ public class EditorListener implements Listener {
 
         }
 
-        else if(e.getView().getTitle().equals("" + ChatColor.DARK_GRAY + ChatColor.BOLD + "Tools Editor")){
+        else if(menuType == EditorHandler.EditorMenuType.TOOLS){
             e.setCancelled(true);
 
             if(e.getCurrentItem() == null || e.getCurrentItem().getType() == Material.AIR)
@@ -128,7 +129,7 @@ public class EditorListener implements Listener {
 
         }
 
-        else if(e.getView().getTitle().equals("" + ChatColor.DARK_GRAY + ChatColor.BOLD + "Tool Editor")){
+        else if(menuType == EditorHandler.EditorMenuType.TOOL_EDITOR){
             e.setCancelled(true);
 
             String toolName = toolTypes.get(player.getUniqueId());
@@ -251,29 +252,32 @@ public class EditorListener implements Listener {
 
     @EventHandler
     public void onEditorClose(InventoryCloseEvent e){
-        if(e.getInventory() == null)
-            return;
-
-        if(!(e.getPlayer() instanceof Player))
+        if(e.getInventory() == null || !isEditorMenu(e.getView()) || !(e.getPlayer() instanceof Player))
             return;
 
         Player player = (Player) e.getPlayer();
 
         Scheduler.runTask(player, () -> {
-            if(e.getView().getTitle().equals("" + ChatColor.AQUA + ChatColor.BOLD + "WildTools")){
+            if(!isEditorMenu(player.getOpenInventory()))
+                return;
+
+            EditorHandler.EditorMenu editorMenu = (EditorHandler.EditorMenu) player.getOpenInventory().getTopInventory().getHolder();
+            EditorHandler.EditorMenuType menuType = editorMenu.getMenuType();
+
+            if(menuType == EditorHandler.EditorMenuType.SETTINGS){
                 if(!noResetClose.contains(player.getUniqueId())) {
                     Scheduler.runTaskAsync(() -> plugin.getEditor().reloadConfiguration());
                 }
             }
 
-            else if(e.getView().getTitle().equals("" + ChatColor.DARK_GRAY + ChatColor.BOLD + "Tools Editor")){
+            else if(menuType == EditorHandler.EditorMenuType.TOOLS){
                 if(toolTypes.containsKey(player.getUniqueId()))
                     return;
                 noResetClose.remove(player.getUniqueId());
                 player.openInventory(plugin.getEditor().getSettingsEditor());
             }
 
-            else if(e.getView().getTitle().equals("" + ChatColor.DARK_GRAY + ChatColor.BOLD + "Tool Editor")){
+            else if(menuType == EditorHandler.EditorMenuType.TOOL_EDITOR){
                 if(toolValues.containsKey(player.getUniqueId()))
                     return;
                 toolTypes.remove(player.getUniqueId());
@@ -377,6 +381,11 @@ public class EditorListener implements Listener {
 
         Scheduler.runTask(e.getPlayer(), () -> e.getPlayer().openInventory(plugin.getEditor().getToolEditor(toolName)));
         toolValues.remove(e.getPlayer().getUniqueId());
+    }
+
+    private static boolean isEditorMenu(InventoryView inventoryView) {
+        Inventory topInventory = inventoryView.getTopInventory();
+        return topInventory != null && topInventory.getHolder() instanceof EditorHandler.EditorMenu;
     }
 
 }
